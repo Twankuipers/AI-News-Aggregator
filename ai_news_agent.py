@@ -62,7 +62,8 @@ class AINewsAggregator:
         self._setup_logging()
     
     def _load_config(self) -> Dict[str, Any]:
-        """Load configuration from JSON file and override with environment variables."""
+        """Load configuration from JSON file and override with local config and environment variables."""
+        # Load base config
         try:
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 config = json.load(f)
@@ -73,9 +74,31 @@ class AINewsAggregator:
             logging.error(f"Error parsing config file: {e}")
             config = self._default_config()
         
+        # Override with local config file if it exists (for local dev with secrets)
+        local_config_path = "config.local.json"
+        if os.path.exists(local_config_path):
+            try:
+                with open(local_config_path, 'r', encoding='utf-8') as f:
+                    local_config = json.load(f)
+                    # Deep merge local config into base config
+                    config = self._deep_merge(config, local_config)
+                    logging.info("Loaded local config overrides from config.local.json")
+            except (FileNotFoundError, json.JSONDecodeError) as e:
+                logging.warning(f"Error loading local config: {e}")
+        
         # Override with environment variables (for GitHub Actions secrets)
         config = self._apply_env_overrides(config)
         return config
+    
+    def _deep_merge(self, base: dict, override: dict) -> dict:
+        """Deep merge override dict into base dict."""
+        result = base.copy()
+        for key, value in override.items():
+            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                result[key] = self._deep_merge(result[key], value)
+            else:
+                result[key] = value
+        return result
     
     def _apply_env_overrides(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """Override config with environment variables if they exist (for GitHub Actions)."""
