@@ -1,1 +1,0 @@
-"Dit project gaat over het bouwen van een slimme robot die koffie kan zetten." 
