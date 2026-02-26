@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Local configuration with sensitive credentials
+# Note: config.json should be committed with placeholder values only
+# Real credentials should be in GitHub Secrets or local override
+config.local.json
+
+# Logs (we commit these to GitHub for debugging)
+# If you want to keep logs private, uncomment:
+# logs/
+
+# Output digests (we commit these to track history)
+# If you want to keep digests private, uncomment:
+# output/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment variables
+.env
+.env.local
