@@ -6,13 +6,19 @@ Includes email and Slack notification support.
 
 import json
 import os
+import hashlib
 import requests
 import feedparser
 import logging
 import re
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from datetime import datetime, timedelta
-from dataclasses import dataclass
+from pathlib import Path
 from typing import List, Optional, Dict, Any
+from bs4 import BeautifulSoup
+
 
 class NewsItem:
     """Represents a single news item from any source."""
@@ -772,7 +778,7 @@ To customize your news sources or keywords, edit config.json
 """
         return text
     
-    def save_digest(self, news_items: List[NewsItem]):
+    def save_digest(self, news_items: List[NewsItem], summary: str = ""):
         """Save HTML and text digests to output folder."""
         output_dir = Path("output")
         output_dir.mkdir(exist_ok=True)
@@ -780,14 +786,14 @@ To customize your news sources or keywords, edit config.json
         today = datetime.now().strftime("%Y-%m-%d")
         
         # Save HTML version
-        html_content = self.generate_email_html(news_items, self.config)
+        html_content = self.generate_email_html(news_items, self.config, summary)
         html_path = output_dir / f"digest_{today}.html"
         with open(html_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
         logging.info(f"HTML digest saved to {html_path}")
         
         # Save text version
-        text_content = self.generate_email_text(news_items, self.config)
+        text_content = self.generate_email_text(news_items)
         text_path = output_dir / f"digest_{today}.txt"
         with open(text_path, 'w', encoding='utf-8') as f:
             f.write(text_content)
@@ -1016,24 +1022,15 @@ To customize your news sources or keywords, edit config.json
             # Generate Groq summary
             summary = generate_groq_summary(news_items, self.config)
 
-            # Generate digests
-            html_content = generate_email_html(news_items, self.config, summary)
-            text_content = generate_email_text(news_items, summary)
-            slack_message = generate_slack_message(news_items, summary)
-
             # Save digests
-            save_digest(html_content, text_content)
+            html_content, text_content = self.save_digest(news_items, summary)
 
             # Send notifications
-            email_config = self.config.get("email_config", {})
-            if email_config.get("enabled"):
-                send_email(html_content, text_content, email_config)
+            self.send_notifications(news_items, html_content)
 
-            slack_config = self.config.get("slack_config", {})
-            if slack_config.get("enabled"):
-                send_slack_message(slack_message, slack_config)
-
-            logging.info(f"Agent completed. {len(news_items)} items sent.")
+            logging.info(f"Successfully processed {len(news_items)} news items")
+            print(f"[OK] Digest generated with {len(news_items)} news items")
+            print(f"  Check output/digest_{datetime.now().strftime('%Y-%m-%d')}.html")
 
         except Exception as e:
             logging.error(f"Error during execution: {e}", exc_info=True)
