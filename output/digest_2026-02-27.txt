@@ -96,12 +96,8 @@ ARXIV MACHINE LEARNING
 HUGGING FACE BLOG
 ------------------------------------------------------------
 
-• Bringing Autonomous Driving  RL to OpenEnv and TRLabout 17 hours ago•11
+• Bringing Autonomous Driving  RL to OpenEnv and TRLabout 18 hours ago•11
   https://huggingface.co/blog/sergiopaniego/bringing-carla-to-openenv-trl
-  Date: 2026-02-27 | Category: Models & Tools
-
-• Scaling Real-Time Voice Agents with  Cache-Aware Streaming ASRJan 5•82
-  https://huggingface.co/blog/nvidia/nemotron-speech-asr-scaling-voice-agents
   Date: 2026-02-27 | Category: Models & Tools
 
 • Your MoE Model Does Not Have to Select Fixed Number of Experts1 day ago•5
@@ -164,18 +160,6 @@ OPENAI BLOG
   https://openai.com/index/why-we-no-longer-evaluate-swe-bench-verified
   SWE-bench Verified is increasingly contaminated and mismeasures frontier coding progress. Our analysis shows flawed tests and training leakage. We recommend SWE-bench Pro.
   Date: 2026-02-23 | Category: Company News
-
-
-GOOGLE AI BLOG
-------------------------------------------------------------
-
-• Gemini models
-  https://blog.google/products-and-platforms/products/gemini/
-  Date: 2026-02-27 | Category: Company News
-
-• Gemini 3 Flash: frontier intelligence built for speedGemini 3 Flash offers frontier intelligence built for speed at a fraction of the cost.
-  https://blog.google/products-and-platforms/products/gemini/gemini-3-flash/
-  Date: 2026-02-27 | Category: Company News
 
 
 ANTHROPIC NEWS
