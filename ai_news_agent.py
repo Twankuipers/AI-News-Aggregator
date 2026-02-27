@@ -983,9 +983,13 @@ To customize your news sources or keywords, edit config.json
             # Build message
             text = f"🤖 *AI News Digest* - {datetime.now().strftime('%B %d, %Y')}\n\n"
 
-            # Summary at the top
+            # Summary + article links at the top
             if summary:
-                text += f"*Today's AI Summary*\n>{summary}\n\n"
+                text += f"*Samenvatting van vandaag*\n>{summary}\n\n"
+                text += "*Uitgelichte artikelen:*\n"
+                for item in news_items[:5]:
+                    text += f"• <{item.url}|{item.title}> _({item.source})_\n"
+                text += "\n"
             
             for source, items in sources.items():
                 text += f"*{source}*\n"
@@ -1058,14 +1062,14 @@ def generate_groq_summary(news_items: List[NewsItem], config: dict) -> str:
         for item in news_items[:20]  # Limit to 20 items to stay within token limits
     ])
 
-    prompt = f"""You are an AI news analyst. Below are today's top AI news headlines and research papers.
-Write a short, engaging summary (max 150 words) highlighting the most important trends, breakthroughs, and themes of the day.
-Be concise, insightful, and use plain English.
+    prompt = f"""Je bent een AI-nieuwsanalist. Hieronder staan de belangrijkste AI-nieuwskoppen en onderzoeksartikelen van vandaag.
+Schrijf een korte, pakkende samenvatting (max 150 woorden) die de belangrijkste trends, doorbraken en thema's van de dag belicht.
+Wees beknopt, inzichtelijk en schrijf in het Nederlands.
 
-Today's AI News:
+Het AI-nieuws van vandaag:
 {news_text}
 
-Summary:"""
+Samenvatting:"""
 
     try:
         response = requests.post(
