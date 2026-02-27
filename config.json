@@ -44,43 +44,19 @@
     },
     {
       "name": "DeepMind Blog",
-      "url": "https://deepmind.google/discover/blog/",
+      "url": "https://blog.google/innovation-and-ai/models-and-research/",
       "category": "Company News",
       "enabled": true
     },
     {
       "name": "Google AI Blog",
-      "url": "https://ai.google/discover/",
+      "url": "https://blog.google/",
       "category": "Company News",
       "enabled": true
     }
   ],
-  "keywords": [
-    "transformer",
-    "transformers",
-    "LLM",
-    "large language model",
-    "GPT",
-    "diffusion",
-    "stable diffusion",
-    "reinforcement learning",
-    "RLHF",
-    "neural network",
-    "deep learning",
-    "computer vision",
-    "NLP",
-    "natural language processing",
-    "generative AI",
-    "machine learning",
-    "AI model",
-    "foundation model",
-    "multimodal",
-    "embedding",
-    "fine-tuning",
-    "prompt engineering",
-    "MCP",
-    "Skills"
-  ],
+  "keywords": [],
+  "comment_keywords": "Leave empty to include ALL articles from sources. Add keywords to filter (e.g., 'transformer', 'LLM', 'GPT')",
   "max_items_per_source": 10,
   "schedule": "daily",
   "email_config": {
