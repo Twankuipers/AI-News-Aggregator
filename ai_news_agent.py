@@ -12,7 +12,7 @@ import logging
 import re
 from datetime import datetime, timedelta
 from dataclasses import dataclass
-from typing import List, Optional, Dict, Any, Any
+from typing import List, Optional, Dict, Any
 
 class NewsItem:
     """Represents a single news item from any source."""
