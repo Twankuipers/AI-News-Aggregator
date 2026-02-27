@@ -2,9 +2,9 @@ name: Daily AI News Aggregator
 
 on:
   schedule:
-    # Run daily at 9:00 AM UTC (adjust timezone as needed)
-    # Cron format: minute hour day month day-of-week
-    - cron: '0 9 * * *'
+    # Run daily at 9:00 AM GMT+1 (8:00 AM UTC)
+    # Cron format: minute hour day month day-of-week (all in UTC)
+    - cron: '0 8 * * *'
   
   # Allow manual trigger from GitHub Actions tab
   workflow_dispatch:
