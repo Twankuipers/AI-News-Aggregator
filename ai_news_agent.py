@@ -279,8 +279,8 @@ class AINewsAggregator:
             response.raise_for_status()
             soup = BeautifulSoup(response.content, 'html.parser')
             
-            # Find blog post articles
-            articles = soup.find_all('article', limit=5)
+            # Find blog post articles - get more to find recent ones
+            articles = soup.find_all('article', limit=15)
             
             for article in articles:
                 try:
@@ -402,38 +402,115 @@ class AINewsAggregator:
         """Fetch latest posts from AI company blogs."""
         news_items = []
         
-        # Try OpenAI blog RSS feed
+        # OpenAI blog via RSS
         try:
             logging.info("Fetching OpenAI blog...")
             feed_url = "https://openai.com/blog/rss.xml"
             feed = feedparser.parse(feed_url)
             
             for entry in feed.entries[:5]:
-                # Check if post is recent (within last 30 days)
-                pub_date = datetime(*entry.published_parsed[:6])
-                days_old = (datetime.now() - pub_date).days
-                
-                if days_old <= 30:
-                    description = entry.get('summary', '')
-                    # Strip HTML tags
-                    description = re.sub('<[^<]+?>', '', description)
-                    if len(description) > 250:
-                        description = description[:250] + "..."
+                try:
+                    pub_date = datetime(*entry.published_parsed[:6])
+                    days_old = (datetime.now() - pub_date).days
+                    
+                    if days_old <= 30:
+                        description = entry.get('summary', '')
+                        description = re.sub('<[^<]+?>', '', description)
+                        if len(description) > 250:
+                            description = description[:250] + "..."
+                        
+                        news_item = NewsItem(
+                            title=entry.title,
+                            url=entry.link,
+                            source="OpenAI Blog",
+                            description=description,
+                            date=pub_date.strftime("%Y-%m-%d"),
+                            category="Company News"
+                        )
+                        news_items.append(news_item)
+                except:
+                    continue
+            
+            logging.info(f"Fetched {len(news_items)} OpenAI blog posts")
+        except Exception as e:
+            logging.error(f"Error fetching OpenAI blog: {e}")
+        
+        # Google AI Blog - simplified
+        try:
+            logging.info("Fetching Google blog...")
+            url = "https://blog.google/"
+            response = requests.get(url, timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            found = 0
+            for article in soup.find_all('a')[:50]:
+                try:
+                    href = article.get('href', '')
+                    title = article.get_text(strip=True)
+                    
+                    if not href or len(title) < 5 or len(title) > 250:
+                        continue
+                    if not href.startswith('https://blog.google'):
+                        continue
+                    if any(item.url == href for item in news_items):
+                        continue
                     
                     news_item = NewsItem(
-                        title=entry.title,
-                        url=entry.link,
-                        source="OpenAI Blog",
-                        description=description,
-                        date=pub_date.strftime("%Y-%m-%d"),
+                        title=title,
+                        url=href,
+                        source="Google Blog",
                         category="Company News"
                     )
                     news_items.append(news_item)
+                    found += 1
+                    if found >= 3:
+                        break
+                except:
+                    continue
             
-            logging.info(f"Fetched {len(news_items)} OpenAI blog posts")
-            
+            logging.info(f"Fetched {found} Google blog posts")
         except Exception as e:
-            logging.error(f"Error fetching OpenAI blog: {e}")
+            logging.warning(f"Error fetching Google blog: {e}")
+        
+        # Anthropic News
+        try:
+            logging.info("Fetching Anthropic news...")
+            url = "https://www.anthropic.com/news"
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # Find article links
+            found = 0
+            for article in soup.find_all('a'):
+                try:
+                    href = article.get('href', '')
+                    if not href or not href.startswith('http'):
+                        continue
+                    if 'anthropic.com' not in href:
+                        continue
+                    
+                    title = article.get_text(strip=True)
+                    if len(title) < 10 or len(title) > 200:
+                        continue
+                    
+                    news_item = NewsItem(
+                        title=title,
+                        url=href,
+                        source="Anthropic News",
+                        category="Company News"
+                    )
+                    news_items.append(news_item)
+                    found += 1
+                    if found >= 3:
+                        break
+                except:
+                    continue
+            
+            logging.info(f"Fetched {found} Anthropic news posts")
+        except Exception as e:
+            logging.warning(f"Error fetching Anthropic news: {e}")
         
         return news_items
     
