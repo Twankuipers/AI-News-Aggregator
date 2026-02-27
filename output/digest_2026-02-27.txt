@@ -108,28 +108,29 @@ HUGGING FACE BLOG
 GITHUB TRENDING
 ------------------------------------------------------------
 
-• GVCLab/PersonaLive
-  https://github.com/GVCLab/PersonaLive
-  [CVPR 2026] PersonaLive! : Expressive Portrait Image Animation for Live Streaming | ⭐ 67 stars today
-  Date: 2026-02-27 | Category: Open Source
-
-• deepseek-ai/DeepSeek-V3
-  https://github.com/deepseek-ai/DeepSeek-V3
-  Date: 2026-02-27 | Category: Open Source
-
 • alibaba/OpenSandbox
   https://github.com/alibaba/OpenSandbox
   OpenSandbox is a general-purpose sandbox platform for AI applications, offering multi-language SDKs, unified sandbox APIs, and Docker/Kubernetes runtimes for scenarios like Coding Agents, GUI Agents, Agent Evaluation, AI Code Execution, and RL Training. | ⭐ 76 stars today
   Date: 2026-02-27 | Category: Open Source
 
-• yichuan-w/LEANN
-  https://github.com/yichuan-w/LEANN
-  [MLsys2026]: RAG on Everything with LEANN. Enjoy 97% storage savings while running a fast, accurate, and 100% private RAG application on your personal device. | ⭐ 23 stars today
+• hiyouga/LlamaFactory
+  https://github.com/hiyouga/LlamaFactory
+  Unified Efficient Fine-Tuning of 100+ LLMs & VLMs (ACL 2024) | ⭐ 54 stars today
   Date: 2026-02-27 | Category: Open Source
 
-• lintsinghua/DeepAudit
-  https://github.com/lintsinghua/DeepAudit
-  DeepAudit：人人拥有的 AI 黑客战队，让漏洞挖掘触手可及。国内首个开源的代码漏洞挖掘多智能体系统。小白一键部署运行，自主协作审计 + 自动化沙箱 PoC 验证。支持 Ollama 私有部署 ，一键生成报告。支持中转站。​让安全不再昂贵，让审计不再复杂。 | ⭐ 35 stars today
+• bytedance/trae-agent
+  https://github.com/bytedance/trae-agent
+  Trae Agent is an LLM-based agent for general purpose software engineering tasks. | ⭐ 11 stars today
+  Date: 2026-02-27 | Category: Open Source
+
+• modelscope/ms-swift
+  https://github.com/modelscope/ms-swift
+  Use PEFT or Full-parameter to CPT/SFT/DPO/GRPO 600+ LLMs (Qwen3.5, DeepSeek-R1, GLM4.5, InternLM3, Llama4, ...) and 300+ MLLMs (Qwen3-VL, Qwen3-Omni, InternVL3.5, Ovis2.5, GLM4.5v, Llava, Phi4, ...) (AAAI 2025). | ⭐ 26 stars today
+  Date: 2026-02-27 | Category: Open Source
+
+• 4thfever/cultivation-world-simulator
+  https://github.com/4thfever/cultivation-world-simulator
+  基于 AI Agent 工作流的修仙世界模拟器，旨在还原智能、开放的仙侠世界。| An open-source Cultivation World Simulator using Agentic Workflow to create a dynamic, emerging Xianxia world. | ⭐ 37 stars today
   Date: 2026-02-27 | Category: Open Source
 
 
@@ -160,6 +161,35 @@ OPENAI BLOG
   https://openai.com/index/why-we-no-longer-evaluate-swe-bench-verified
   SWE-bench Verified is increasingly contaminated and mismeasures frontier coding progress. Our analysis shows flawed tests and training leakage. We recommend SWE-bench Pro.
   Date: 2026-02-23 | Category: Company News
+
+
+GOOGLE AI BLOG
+------------------------------------------------------------
+
+• Google and the Massachusetts AI Hub are launching a new AI training initiative for the Commonwealth.
+  https://blog.google/company-news/outreach-and-initiatives/grow-with-google/google-ai-training-massachusetts-residents/
+  Google is partnering with the Massachusetts AI Hub to provide every Baystater with no-cost access to Google’s AI training.
+  Date: 2026-02-26 | Category: Company News
+
+• Get more context and understand translations more deeply with new AI-powered updates in Translate.
+  https://blog.google/products-and-platforms/products/translate/translation-context-ai-update/
+  New alternatives, “understand” and “ask” buttons in Google Translate help you navigate the complexities of natural language.
+  Date: 2026-02-26 | Category: Company News
+
+• Build with Nano Banana 2, our best image generation and editing model
+  https://blog.google/innovation-and-ai/technology/developers-tools/build-with-nano-banana-2/
+  Build with Nano Banana 2
+  Date: 2026-02-26 | Category: Company News
+
+• Nano Banana 2: Combining Pro capabilities with lightning-fast speed
+  https://blog.google/innovation-and-ai/technology/ai/nano-banana-2/
+  Nano Banana 2 text with AI generated images around it
+  Date: 2026-02-26 | Category: Company News
+
+• See the whole picture and find the look with Circle to Search
+  https://blog.google/products-and-platforms/products/search/circle-to-search-february-2026/
+  Google Search interface featuring AI-powered tools including an "AI Overview" that breaks down an outfit's components and a virtual "Try it on" button that visualizes apparel on diverse body types.
+  Date: 2026-02-25 | Category: Company News
 
 
 ANTHROPIC NEWS
