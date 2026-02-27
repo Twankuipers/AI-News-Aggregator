@@ -982,16 +982,16 @@ To customize your news sources or keywords, edit config.json
 
             # Build message
             text = f"🤖 *AI News Digest* - {datetime.now().strftime('%B %d, %Y')}\n\n"
+
+            # Summary at the top
+            if summary:
+                text += f"*Today's AI Summary*\n>{summary}\n\n"
             
             for source, items in sources.items():
                 text += f"*{source}*\n"
                 for item in items[:3]:  # Show first 3 items per source
                     text += f"• <{item.url}|{item.title}>\n"
                 text += "\n"
-            
-            # Append summary at the bottom
-            if summary:
-                text += f"*Today's AI Summary*\n>{summary}\n"
             
             payload = {
                 "text": text,
