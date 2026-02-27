@@ -96,45 +96,17 @@ ARXIV MACHINE LEARNING
 HUGGING FACE BLOG
 ------------------------------------------------------------
 
-• Did GPT 5.2 make a breakthrough discovery in theoretical physics?8 days ago•56
-  https://huggingface.co/blog/dlouapre/gpt-single-minus-gluons
-  Date: 2026-02-27 | Category: Models & Tools
-
-• FINAL Bench: The Real Bottleneck to AGI Is Self-Correction6 days ago•18
-  https://huggingface.co/blog/FINAL-Bench/metacognitive
-  Date: 2026-02-27 | Category: Models & Tools
-
-• Do Bubbles Form When Tens of Thousands of AIs Simulate Capitalism?3 days ago•16
-  https://huggingface.co/blog/FINAL-Bench/pumpdump
-  Date: 2026-02-27 | Category: Models & Tools
-
-• Introducing Legal RAG Bench7 days ago•11
-  https://huggingface.co/blog/isaacus/legal-rag-bench
-  Date: 2026-02-27 | Category: Models & Tools
-
 • Bringing Autonomous Driving  RL to OpenEnv and TRLabout 17 hours ago•11
   https://huggingface.co/blog/sergiopaniego/bringing-carla-to-openenv-trl
   Date: 2026-02-27 | Category: Models & Tools
 
-• DenseR: Dense Rewards For Free in LLM Reasoning9 days ago•18
-  https://huggingface.co/blog/hbXNov/denser
+• Scaling Real-Time Voice Agents with  Cache-Aware Streaming ASRJan 5•82
+  https://huggingface.co/blog/nvidia/nemotron-speech-asr-scaling-voice-agents
   Date: 2026-02-27 | Category: Models & Tools
 
-• **ColBERT-Zero: To Pre-train Or Not To Pre-train ColBERT models?**8 days ago•17
-  https://huggingface.co/blog/lightonai/colbert-zero
-  Date: 2026-02-27 | Category: Models & Tools
-
-• Visual Aesthetic Benchmark: Can Frontier Models Judge Beauty?2 days ago•9
-  https://huggingface.co/blog/zhangchenxu/visual-aesthetic-benchmark
-  Date: 2026-02-27 | Category: Models & Tools
-
-• Kimi K2.5: Still Worth It After Two Weeks?4 days ago•6
-  https://huggingface.co/blog/mlabonne/kimik25
-  Date: 2026-02-27 | Category: Models & Tools
-
-• Follow the White Rabbit: Using Embeddings So You Never Get Lost in Translation4 days ago•6
-  https://huggingface.co/blog/dacorvo/dont-get-lost-in-embeddings
-  Date: 2026-02-27 | Category: Models & Tools
+• Your MoE Model Does Not Have to Select Fixed Number of Experts1 day ago•5
+  https://huggingface.co/blog/Spico/dynamic-routing
+  Date: 2026-02-26 | Category: Models & Tools
 
 
 GITHUB TRENDING
