@@ -6,19 +6,13 @@ Includes email and Slack notification support.
 
 import json
 import os
-from datetime import datetime, timedelta
-from pathlib import Path
-import logging
-from typing import List, Dict, Any
-import hashlib
 import requests
-from bs4 import BeautifulSoup
 import feedparser
+import logging
 import re
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-
+from datetime import datetime, timedelta
+from dataclasses import dataclass
+from typing import List, Optional
 
 class NewsItem:
     """Represents a single news item from any source."""
@@ -621,10 +615,19 @@ class AINewsAggregator:
         
         return limited_items
     
-    def generate_email_html(self, news_items: List[NewsItem]) -> str:
-        """Generate HTML email content from news items."""
-        today = datetime.now().strftime("%B %d, %Y")
+    def generate_email_html(self, news_items: List[NewsItem], config: dict, summary: str = "") -> str:
+        """Generate HTML email content."""
+        date_str = datetime.now().strftime("%B %d, %Y")
         
+        summary_block = ""
+        if summary:
+            summary_block = f"""
+        <div style="background:#f0f7ff;border-left:4px solid #0066cc;padding:16px 20px;margin-bottom:28px;border-radius:4px;">
+            <h2 style="margin:0 0 8px 0;color:#0066cc;font-size:16px;">Today's AI Summary</h2>
+            <p style="margin:0;color:#333;line-height:1.6;font-size:14px;">{summary}</p>
+        </div>
+        """
+
         html = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -693,7 +696,7 @@ class AINewsAggregator:
 </head>
 <body>
     <div class="container">
-        <h1>🤖 AI News Digest - {today}</h1>
+        <h1>🤖 AI News Digest - {date_str}</h1>
         <p>Your daily roundup of the latest in AI models, research papers, and industry news.</p>
 """
         
@@ -730,12 +733,12 @@ class AINewsAggregator:
 """
         return html
     
-    def generate_email_text(self, news_items: List[NewsItem]) -> str:
-        """Generate plain text email content from news items."""
-        today = datetime.now().strftime("%B %d, %Y")
+    def generate_email_text(self, news_items: List[NewsItem], summary: str = "") -> str:
+        """Generate plain text email content."""
+        date_str = datetime.now().strftime("%B %d, %Y")
         
         text = f"""
-AI NEWS DIGEST - {today}
+AI NEWS DIGEST - {date_str}
 {'=' * 60}
 
 Your daily roundup of the latest in AI models, research papers, and industry news.
@@ -777,14 +780,14 @@ To customize your news sources or keywords, edit config.json
         today = datetime.now().strftime("%Y-%m-%d")
         
         # Save HTML version
-        html_content = self.generate_email_html(news_items)
+        html_content = self.generate_email_html(news_items, self.config)
         html_path = output_dir / f"digest_{today}.html"
         with open(html_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
         logging.info(f"HTML digest saved to {html_path}")
         
         # Save text version
-        text_content = self.generate_email_text(news_items)
+        text_content = self.generate_email_text(news_items, self.config)
         text_path = output_dir / f"digest_{today}.txt"
         with open(text_path, 'w', encoding='utf-8') as f:
             f.write(text_content)
@@ -969,10 +972,8 @@ To customize your news sources or keywords, edit config.json
             # Group items by source
             sources = {}
             for item in news_items:
-                if item.source not in sources:
-                    sources[item.source] = []
-                sources[item.source].append(item)
-            
+                sources.setdefault(item.source, []).append(item)
+
             # Build message
             text = f"🤖 *AI News Digest* - {datetime.now().strftime('%B %d, %Y')}\n\n"
             
@@ -1012,19 +1013,81 @@ To customize your news sources or keywords, edit config.json
                     self._send_slack_message([])
                 return
             
-            # Generate and save digest
-            html_content, text_content = self.save_digest(news_items)
-            
+            # Generate Groq summary
+            summary = generate_groq_summary(news_items, self.config)
+
+            # Generate digests
+            html_content = generate_email_html(news_items, self.config, summary)
+            text_content = generate_email_text(news_items, summary)
+            slack_message = generate_slack_message(news_items, summary)
+
+            # Save digests
+            save_digest(html_content, text_content)
+
             # Send notifications
-            self.send_notifications(news_items, html_content)
-            
-            logging.info(f"Successfully processed {len(news_items)} news items")
-            print(f"[OK] Digest generated with {len(news_items)} news items")
-            print(f"  Check output/digest_{datetime.now().strftime('%Y-%m-%d')}.html")
-            
+            email_config = self.config.get("email_config", {})
+            if email_config.get("enabled"):
+                send_email(html_content, text_content, email_config)
+
+            slack_config = self.config.get("slack_config", {})
+            if slack_config.get("enabled"):
+                send_slack_message(slack_message, slack_config)
+
+            logging.info(f"Agent completed. {len(news_items)} items sent.")
+
         except Exception as e:
             logging.error(f"Error during execution: {e}", exc_info=True)
             raise
+
+
+def generate_groq_summary(news_items: List[NewsItem], config: dict) -> str:
+    """Generate a summary of today's AI news using Groq API."""
+    groq_config = config.get("groq_config", {})
+    if not groq_config.get("enabled", False):
+        return ""
+    
+    api_key = groq_config.get("api_key") or os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        logging.warning("Groq API key not found, skipping summary")
+        return ""
+
+    # Build a short text of all headlines + descriptions
+    news_text = "\n".join([
+        f"- [{item.source}] {item.title}: {item.description[:100]}"
+        for item in news_items[:20]  # Limit to 20 items to stay within token limits
+    ])
+
+    prompt = f"""You are an AI news analyst. Below are today's top AI news headlines and research papers.
+Write a short, engaging summary (max 150 words) highlighting the most important trends, breakthroughs, and themes of the day.
+Be concise, insightful, and use plain English.
+
+Today's AI News:
+{news_text}
+
+Summary:"""
+
+    try:
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": groq_config.get("model", "llama-3.1-8b-instant"),
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 250,
+                "temperature": 0.7
+            },
+            timeout=30
+        )
+        response.raise_for_status()
+        summary = response.json()["choices"][0]["message"]["content"].strip()
+        logging.info("Groq summary generated successfully")
+        return summary
+    except Exception as e:
+        logging.warning(f"Groq summary failed: {e}")
+        return ""
 
 
 def main():
