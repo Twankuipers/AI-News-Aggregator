@@ -306,29 +306,44 @@ class AINewsAggregator:
                         date_str = date_elem.get_text(strip=True).lower()
                         
                         # Try relative date formats first (e.g., "8 days ago", "2 hours ago")
-                        import re as regex_module
-                        relative_match = regex_module.search(r'(\d+)\s+(day|hour|minute)s?\s+ago', date_str)
+                        relative_match = re.search(r'(\d+)\s+(day|hour|minute)s?\s+ago', date_str)
                         if relative_match:
                             num = int(relative_match.group(1))
                             unit = relative_match.group(2)
-                            if unit == 'day':
-                                days_old = num
-                            elif unit == 'hour':
-                                days_old = 0  # Hours count as today
-                            elif unit == 'minute':
-                                days_old = 0  # Minutes count as today
+                            days_old = num if unit == 'day' else 0
                             post_datetime = datetime.now() - timedelta(days=days_old)
                             post_date = post_datetime.strftime("%Y-%m-%d")
                         else:
-                            # Try to parse common date formats
+                            current_year = datetime.now().year
+                            parsed = False
+                            # Try formats with year first
                             for fmt in ["%B %d, %Y", "%b %d, %Y", "%Y-%m-%d", "%d/%m/%Y"]:
                                 try:
                                     parsed_date = datetime.strptime(date_str, fmt)
                                     post_date = parsed_date.strftime("%Y-%m-%d")
                                     days_old = (datetime.now() - parsed_date).days
+                                    parsed = True
                                     break
                                 except:
                                     continue
+                            if not parsed:
+                                # Handle short dates without year: "Jan 5", "Dec 12"
+                                for fmt, sep in [("%b %d %Y", " "), ("%B %d %Y", " ")]:
+                                    try:
+                                        date_with_year = f"{date_str} {current_year}"
+                                        parsed_date = datetime.strptime(date_with_year, fmt)
+                                        if parsed_date > datetime.now():
+                                            date_with_year = f"{date_str} {current_year - 1}"
+                                            parsed_date = datetime.strptime(date_with_year, fmt)
+                                        post_date = parsed_date.strftime("%Y-%m-%d")
+                                        days_old = (datetime.now() - parsed_date).days
+                                        parsed = True
+                                        break
+                                    except:
+                                        continue
+                            if not parsed:
+                                # Unknown date format - exclude to be safe
+                                days_old = 999
                     
                     # Filter to only recent posts (last 1 day - today only)
                     if days_old > 1:
@@ -472,58 +487,40 @@ class AINewsAggregator:
         except Exception as e:
             logging.error(f"Error fetching OpenAI blog: {e}")
         
-        # Google AI Blog
+        # Google AI Blog - use RSS feeds (page is JS-rendered so HTML scraping gives 0 results)
         try:
             logging.info("Fetching Google blog...")
-            url = "https://blog.google/innovation-and-ai/models-and-research/"
-            response = requests.get(url, timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
-            response.raise_for_status()
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            # Try multiple selectors for articles
             found = 0
-            selectors = [
-                soup.find_all('a', class_=lambda x: x and 'card' in x.lower()),
-                soup.find_all('a', class_=lambda x: x and 'post' in x.lower()),
-                soup.find_all('a', class_=lambda x: x and 'article' in x.lower()),
-                soup.find_all('a')
+            google_feeds = [
+                ("https://blog.google/innovation-and-ai/rss/", "Google AI Blog"),
+                ("https://blog.google/technology/ai/rss/", "Google AI Blog"),
             ]
-            
-            for selector_results in selectors:
-                if not selector_results:
-                    continue
-                    
-                for link in selector_results[:30]:
-                    try:
-                        href = link.get('href', '')
-                        title = link.get_text(strip=True)
-                        
-                        # Skip if not a full URL or not Google blog
-                        if not href or not title:
-                            continue
-                        if len(title) < 5 or len(title) > 350:
-                            continue
-                        if not href.startswith('https://blog.google'):
-                            continue
-                        if any(item.url == href for item in news_items):
-                            continue
-                        
-                        news_item = NewsItem(
-                            title=title,
-                            url=href,
-                            source="Google AI Blog",
-                            category="Company News"
-                        )
-                        news_items.append(news_item)
-                        found += 1
-                        if found >= 3:
-                            break
-                    except:
-                        continue
-                        
+            for feed_url, feed_source in google_feeds:
                 if found >= 3:
                     break
-            
+                try:
+                    feed = feedparser.parse(feed_url)
+                    for entry in feed.entries[:5]:
+                        try:
+                            pub_date = datetime(*entry.published_parsed[:6])
+                            days_old = (datetime.now() - pub_date).days
+                            if days_old > 2:
+                                continue
+                            description = re.sub('<[^<]+?>', '', entry.get('summary', ''))[:250]
+                            if not any(item.url == entry.link for item in news_items):
+                                news_items.append(NewsItem(
+                                    title=entry.title,
+                                    url=entry.link,
+                                    source=feed_source,
+                                    description=description,
+                                    date=pub_date.strftime("%Y-%m-%d"),
+                                    category="Company News"
+                                ))
+                                found += 1
+                        except:
+                            continue
+                except:
+                    continue
             logging.info(f"Fetched {found} Google blog posts")
         except Exception as e:
             logging.warning(f"Error fetching Google blog: {e}")
@@ -854,7 +851,7 @@ To customize your news sources or keywords, edit config.json
             server.quit()
             
             logging.info(f"Email sent to {to_email}")
-            print(f"✓ Email sent to {to_email}")
+            print(f"[OK] Email sent to {to_email}")
             
         except Exception as e:
             logging.error(f"Error sending email via SMTP: {e}")
@@ -908,7 +905,7 @@ To customize your news sources or keywords, edit config.json
             response = requests.post(url, json=data, headers=headers)
             if response.status_code == 202:
                 logging.info(f"Email sent via SendGrid to {to_email}")
-                print(f"✓ Email sent via SendGrid to {to_email}")
+                print(f"[OK] Email sent via SendGrid to {to_email}")
             else:
                 logging.error(f"SendGrid error: {response.text}")
         
@@ -939,7 +936,7 @@ To customize your news sources or keywords, edit config.json
             response = requests.post(url, auth=("api", api_key), data=data)
             if response.status_code == 200:
                 logging.info(f"Email sent via Mailgun to {to_email}")
-                print(f"✓ Email sent via Mailgun to {to_email}")
+                print(f"[OK] Email sent via Mailgun to {to_email}")
             else:
                 logging.error(f"Mailgun error: {response.text}")
         
@@ -964,7 +961,7 @@ To customize your news sources or keywords, edit config.json
                 response = requests.post(webhook_url, json=payload)
                 if response.status_code == 200:
                     logging.info("Slack notification sent (no new items)")
-                    print("✓ Slack notification sent (no new items)")
+                    print("[OK] Slack notification sent (no new items)")
                 else:
                     logging.error(f"Slack error: {response.text}")
                 return
@@ -993,7 +990,7 @@ To customize your news sources or keywords, edit config.json
             response = requests.post(webhook_url, json=payload)
             if response.status_code == 200:
                 logging.info("Slack notification sent")
-                print("✓ Slack notification sent")
+                print("[OK] Slack notification sent")
             else:
                 logging.error(f"Slack error: {response.text}")
         
@@ -1022,7 +1019,7 @@ To customize your news sources or keywords, edit config.json
             self.send_notifications(news_items, html_content)
             
             logging.info(f"Successfully processed {len(news_items)} news items")
-            print(f"✓ Digest generated with {len(news_items)} news items")
+            print(f"[OK] Digest generated with {len(news_items)} news items")
             print(f"  Check output/digest_{datetime.now().strftime('%Y-%m-%d')}.html")
             
         except Exception as e:
