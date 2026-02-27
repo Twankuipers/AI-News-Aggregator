@@ -801,7 +801,7 @@ To customize your news sources or keywords, edit config.json
         
         return html_content, text_content
     
-    def send_notifications(self, news_items: List[NewsItem], html_content: str):
+    def send_notifications(self, news_items: List[NewsItem], html_content: str, summary: str = ""):
         """Send email and/or Slack notifications."""
         
         # Send email if configured
@@ -810,7 +810,7 @@ To customize your news sources or keywords, edit config.json
         
         # Send Slack if configured
         if self.config.get("slack_config", {}).get("enabled"):
-            self._send_slack_message(news_items)
+            self._send_slack_message(news_items, summary)
     
     def _send_email(self, html_content: str, news_items: List[NewsItem]):
         """Send email digest."""
@@ -952,7 +952,7 @@ To customize your news sources or keywords, edit config.json
         except Exception as e:
             logging.error(f"Error sending via Mailgun: {e}")
     
-    def _send_slack_message(self, news_items: List[NewsItem]):
+    def _send_slack_message(self, news_items: List[NewsItem], summary: str = ""):
         """Send Slack notification."""
         try:
             slack_config = self.config.get("slack_config", {})
@@ -988,6 +988,10 @@ To customize your news sources or keywords, edit config.json
                 for item in items[:3]:  # Show first 3 items per source
                     text += f"• <{item.url}|{item.title}>\n"
                 text += "\n"
+            
+            # Append summary at the bottom
+            if summary:
+                text += f"*Today's AI Summary*\n>{summary}\n"
             
             payload = {
                 "text": text,
@@ -1026,7 +1030,7 @@ To customize your news sources or keywords, edit config.json
             html_content, text_content = self.save_digest(news_items, summary)
 
             # Send notifications
-            self.send_notifications(news_items, html_content)
+            self.send_notifications(news_items, html_content, summary)
 
             logging.info(f"Successfully processed {len(news_items)} news items")
             print(f"[OK] Digest generated with {len(news_items)} news items")
