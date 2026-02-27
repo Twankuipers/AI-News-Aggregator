@@ -299,26 +299,40 @@ class AINewsAggregator:
                     
                     # Try to extract date from article
                     post_date = datetime.now().strftime("%Y-%m-%d")
+                    days_old = 0
+                    
                     date_elem = article.find('time')
                     if date_elem:
-                        date_str = date_elem.get_text(strip=True)
-                        # Try to parse common date formats
-                        for fmt in ["%B %d, %Y", "%b %d, %Y", "%Y-%m-%d", "%d/%m/%Y"]:
-                            try:
-                                parsed_date = datetime.strptime(date_str, fmt)
-                                post_date = parsed_date.strftime("%Y-%m-%d")
-                                break
-                            except:
-                                continue
+                        date_str = date_elem.get_text(strip=True).lower()
+                        
+                        # Try relative date formats first (e.g., "8 days ago", "2 hours ago")
+                        import re as regex_module
+                        relative_match = regex_module.search(r'(\d+)\s+(day|hour|minute)s?\s+ago', date_str)
+                        if relative_match:
+                            num = int(relative_match.group(1))
+                            unit = relative_match.group(2)
+                            if unit == 'day':
+                                days_old = num
+                            elif unit == 'hour':
+                                days_old = 0  # Hours count as today
+                            elif unit == 'minute':
+                                days_old = 0  # Minutes count as today
+                            post_datetime = datetime.now() - timedelta(days=days_old)
+                            post_date = post_datetime.strftime("%Y-%m-%d")
+                        else:
+                            # Try to parse common date formats
+                            for fmt in ["%B %d, %Y", "%b %d, %Y", "%Y-%m-%d", "%d/%m/%Y"]:
+                                try:
+                                    parsed_date = datetime.strptime(date_str, fmt)
+                                    post_date = parsed_date.strftime("%Y-%m-%d")
+                                    days_old = (datetime.now() - parsed_date).days
+                                    break
+                                except:
+                                    continue
                     
-                    # Filter to only recent posts (last 2 days)
-                    try:
-                        post_datetime = datetime.strptime(post_date, "%Y-%m-%d")
-                        days_old = (datetime.now() - post_datetime).days
-                        if days_old > 2:
-                            continue
-                    except:
-                        pass
+                    # Filter to only recent posts (last 1 day - today only)
+                    if days_old > 1:
+                        continue
                     
                     # Find description
                     desc_elem = article.find('p')
