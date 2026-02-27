@@ -297,6 +297,29 @@ class AINewsAggregator:
                     else:
                         post_url = href
                     
+                    # Try to extract date from article
+                    post_date = datetime.now().strftime("%Y-%m-%d")
+                    date_elem = article.find('time')
+                    if date_elem:
+                        date_str = date_elem.get_text(strip=True)
+                        # Try to parse common date formats
+                        for fmt in ["%B %d, %Y", "%b %d, %Y", "%Y-%m-%d", "%d/%m/%Y"]:
+                            try:
+                                parsed_date = datetime.strptime(date_str, fmt)
+                                post_date = parsed_date.strftime("%Y-%m-%d")
+                                break
+                            except:
+                                continue
+                    
+                    # Filter to only recent posts (last 2 days)
+                    try:
+                        post_datetime = datetime.strptime(post_date, "%Y-%m-%d")
+                        days_old = (datetime.now() - post_datetime).days
+                        if days_old > 2:
+                            continue
+                    except:
+                        pass
+                    
                     # Find description
                     desc_elem = article.find('p')
                     description = desc_elem.get_text(strip=True) if desc_elem else ""
@@ -309,7 +332,7 @@ class AINewsAggregator:
                         url=post_url,
                         source="Hugging Face Blog",
                         description=description,
-                        date=datetime.now().strftime("%Y-%m-%d"),
+                        date=post_date,
                         category="Models & Tools"
                     )
                     news_items.append(news_item)
