@@ -435,39 +435,57 @@ class AINewsAggregator:
         except Exception as e:
             logging.error(f"Error fetching OpenAI blog: {e}")
         
-        # Google AI Blog - simplified
+        # Google AI Blog
         try:
             logging.info("Fetching Google blog...")
-            url = "https://blog.google/"
+            url = "https://blog.google/innovation-and-ai/models-and-research/"
             response = requests.get(url, timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
             response.raise_for_status()
             soup = BeautifulSoup(response.content, 'html.parser')
             
+            # Try multiple selectors for articles
             found = 0
-            for article in soup.find_all('a')[:50]:
-                try:
-                    href = article.get('href', '')
-                    title = article.get_text(strip=True)
-                    
-                    if not href or len(title) < 5 or len(title) > 250:
-                        continue
-                    if not href.startswith('https://blog.google'):
-                        continue
-                    if any(item.url == href for item in news_items):
-                        continue
-                    
-                    news_item = NewsItem(
-                        title=title,
-                        url=href,
-                        source="Google Blog",
-                        category="Company News"
-                    )
-                    news_items.append(news_item)
-                    found += 1
-                    if found >= 3:
-                        break
-                except:
+            selectors = [
+                soup.find_all('a', class_=lambda x: x and 'card' in x.lower()),
+                soup.find_all('a', class_=lambda x: x and 'post' in x.lower()),
+                soup.find_all('a', class_=lambda x: x and 'article' in x.lower()),
+                soup.find_all('a')
+            ]
+            
+            for selector_results in selectors:
+                if not selector_results:
                     continue
+                    
+                for link in selector_results[:30]:
+                    try:
+                        href = link.get('href', '')
+                        title = link.get_text(strip=True)
+                        
+                        # Skip if not a full URL or not Google blog
+                        if not href or not title:
+                            continue
+                        if len(title) < 5 or len(title) > 350:
+                            continue
+                        if not href.startswith('https://blog.google'):
+                            continue
+                        if any(item.url == href for item in news_items):
+                            continue
+                        
+                        news_item = NewsItem(
+                            title=title,
+                            url=href,
+                            source="Google AI Blog",
+                            category="Company News"
+                        )
+                        news_items.append(news_item)
+                        found += 1
+                        if found >= 3:
+                            break
+                    except:
+                        continue
+                        
+                if found >= 3:
+                    break
             
             logging.info(f"Fetched {found} Google blog posts")
         except Exception as e:
