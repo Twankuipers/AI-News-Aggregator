@@ -25,6 +25,13 @@
       "enabled": true
     },
     {
+      "name": "Hugging Face New Models (OSM) - Major Brands",
+      "url": "https://huggingface.co/models?sort=modified",
+      "category": "Models & Tools",
+      "enabled": true,
+      "brand_filter": ["Qwen", "mistralai", "deepseek", "meta-llama", "google", "microsoft", "anthropic", "deepmind", "openai", "moonshotai"]
+    },
+    {
       "name": "GitHub Trending Python",
       "url": "https://github.com/trending/python?since=daily",
       "category": "Open Source",
