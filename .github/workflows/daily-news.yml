@@ -9,6 +9,9 @@ on:
   # Allow manual trigger from GitHub Actions tab
   workflow_dispatch:
 
+permissions:
+  contents: write  # Required to commit and push changes back
+
 jobs:
   fetch-and-send-news:
     runs-on: ubuntu-latest
@@ -61,23 +64,27 @@ jobs:
       run: |
         python ai_news_agent.py
     
-    - name: Commit and push updates
+    - name: Commit and push seen_items.json
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         
-        # Add changes to seen_items.json (to track duplicates across runs)
-        git add data/seen_items.json || true
-        git add logs/*.log || true
-        git add output/*.html output/*.txt || true
-        
-        # Commit if there are changes
-        git diff --quiet && git diff --staged --quiet || \
-          git commit -m "Auto-update: Daily AI news digest $(date +'%Y-%m-%d')"
-        
-        # Push changes back to repository
-        git push || true
-      continue-on-error: true
+        # Add seen_items.json (critical for deduplication across runs)
+        if [ -f data/seen_items.json ]; then
+          git add data/seen_items.json
+          
+          # Commit if there are changes
+          if ! git diff --cached --quiet; then
+            git commit -m "Auto-update: seen_items.json $(date +'%Y-%m-%d %H:%M')"
+            git pull --rebase origin main || git pull --rebase origin master
+            git push
+            echo "✓ seen_items.json saved successfully"
+          else
+            echo "No changes to seen_items.json"
+          fi
+        else
+          echo "Warning: data/seen_items.json not found"
+        fi
     
     - name: Upload digest artifacts
       uses: actions/upload-artifact@v4
