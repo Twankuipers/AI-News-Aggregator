@@ -25,10 +25,32 @@
       "enabled": true
     },
     {
-      "name": "Hugging Face New Models (OSM) - Major Brands",
-      "url": "https://huggingface.co/models?sort=trending",
+      "name": "HF API - Qwen Models",
+      "url": "https://huggingface.co/api/models?author=Qwen&sort=lastModified&direction=-1&limit=5",
       "category": "Models & Tools",
-      "enabled": true
+      "enabled": true,
+      "type": "api"
+    },
+    {
+      "name": "HF API - Mistral Models",
+      "url": "https://huggingface.co/api/models?author=mistralai&sort=lastModified&direction=-1&limit=5",
+      "category": "Models & Tools",
+      "enabled": true,
+      "type": "api"
+    },
+    {
+      "name": "HF API - DeepSeek Models",
+      "url": "https://huggingface.co/api/models?author=deepseek-ai&sort=lastModified&direction=-1&limit=5",
+      "category": "Models & Tools",
+      "enabled": true,
+      "type": "api"
+    },
+    {
+      "name": "HF API - Meta Llama Models",
+      "url": "https://huggingface.co/api/models?author=meta-llama&sort=lastModified&direction=-1&limit=5",
+      "category": "Models & Tools",
+      "enabled": true,
+      "type": "api"
     },
     {
       "name": "GitHub Trending Python",
