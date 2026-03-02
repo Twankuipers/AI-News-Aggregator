@@ -25,32 +25,32 @@
       "enabled": true
     },
     {
-      "name": "HF API - Qwen Models",
-      "url": "https://huggingface.co/api/models?author=Qwen&sort=lastModified&direction=-1&limit=5",
+      "name": "Qwen Models",
+      "url": "https://huggingface.co/Qwen",
       "category": "Models & Tools",
       "enabled": true,
-      "type": "api"
+      "type": "hf_org"
     },
     {
-      "name": "HF API - Mistral Models",
-      "url": "https://huggingface.co/api/models?author=mistralai&sort=lastModified&direction=-1&limit=5",
+      "name": "Mistral Models",
+      "url": "https://huggingface.co/mistralai",
       "category": "Models & Tools",
       "enabled": true,
-      "type": "api"
+      "type": "hf_org"
     },
     {
-      "name": "HF API - DeepSeek Models",
-      "url": "https://huggingface.co/api/models?author=deepseek-ai&sort=lastModified&direction=-1&limit=5",
+      "name": "DeepSeek Models",
+      "url": "https://huggingface.co/deepseek-ai",
       "category": "Models & Tools",
       "enabled": true,
-      "type": "api"
+      "type": "hf_org"
     },
     {
-      "name": "HF API - Meta Llama Models",
-      "url": "https://huggingface.co/api/models?author=meta-llama&sort=lastModified&direction=-1&limit=5",
+      "name": "Meta Llama Models",
+      "url": "https://huggingface.co/meta-llama",
       "category": "Models & Tools",
       "enabled": true,
-      "type": "api"
+      "type": "hf_org"
     },
     {
       "name": "GitHub Trending Python",
@@ -120,7 +120,7 @@
   "filters": {
     "exclude_keywords": [],
     "min_description_length": 0,
-    "date_range_days": 1
+    "date_range_days": 7
   },
   "groq_config": {
     "enabled": true,
