@@ -1107,10 +1107,6 @@ To customize your news sources or keywords, edit config.json
             # Summary + article links at the top
             if summary:
                 text += f"*Samenvatting van vandaag*\n>{summary}\n\n"
-                text += "*Uitgelichte artikelen:*\n"
-                for item in news_items[:5]:
-                    text += f"• <{item.url}|{item.title}> _({item.source})_\n"
-                text += "\n"
             
             for source, items in sources.items():
                 text += f"*{source}*\n"
@@ -1180,12 +1176,12 @@ def generate_groq_summary(news_items: List[NewsItem], config: dict) -> str:
     # Build a short text of all headlines + descriptions
     news_text = "\n".join([
         f"- [{item.source}] {item.title}: {item.description[:100]}"
-        for item in news_items[:20]  # Limit to 20 items to stay within token limits
+        for item in news_items[:50]  # Limit to 20 items to stay within token limits
     ])
 
     prompt = f"""Je bent een AI-nieuwsanalist. Hieronder staan de belangrijkste AI-nieuwskoppen en onderzoeksartikelen van vandaag.
 Schrijf een korte, pakkende samenvatting (max 150 woorden) die de belangrijkste trends, doorbraken en thema's van de dag belicht.
-Wees beknopt, inzichtelijk en schrijf in het Nederlands.
+Wees beknopt, inzichtelijk en schrijf in het Nederlands, als het om modellen gaat vertel dan welke scores ze hebben behaald in benchmarks.
 
 Het AI-nieuws van vandaag:
 {news_text}
