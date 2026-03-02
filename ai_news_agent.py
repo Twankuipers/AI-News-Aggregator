@@ -377,6 +377,126 @@ class AINewsAggregator:
         
         return news_items
     
+    def fetch_huggingface_org_models(self) -> List[NewsItem]:
+        """Fetch latest models from HuggingFace organization pages."""
+        news_items = []
+        
+        for source in self.config.get("sources", []):
+            if source.get("type") != "hf_org" or not source.get("enabled"):
+                continue
+            
+            try:
+                org_name = source["url"].split("/")[-1]
+                source_name = source.get("name", f"{org_name} Models")
+                
+                logging.info(f"Fetching {source_name}...")
+                
+                # Use HuggingFace API to get organization models
+                api_url = f"https://huggingface.co/api/models?author={org_name}&sort=lastModified&direction=-1&limit=20"
+                response = requests.get(api_url, timeout=10)
+                response.raise_for_status()
+                models = response.json()
+                
+                if isinstance(models, dict) and "error" in models:
+                    logging.warning(f"HF API error for {org_name}: {models['error']}")
+                    continue
+                
+                if not isinstance(models, list):
+                    models = [models] if models else []
+                
+                max_per_source = self.config.get("max_items_per_source", 10)
+                added = 0
+                
+                for model in models[:max_per_source]:
+                    try:
+                        if isinstance(model, dict):
+                            model_id = model.get("id", model.get("modelId", ""))
+                            if not model_id:
+                                continue
+                            
+                            # Build model details
+                            title = model_id
+                            url = f"https://huggingface.co/{model_id}"
+                            
+                            # Extract model info for description
+                            description_parts = []
+                            
+                            # Add model size if available
+                            if "gated" in model and model["gated"]:
+                                description_parts.append("🔒 Gated model")
+                            
+                            # Add tags/pipeline
+                            tags = model.get("tags", [])
+                            if tags:
+                                description_parts.append(f"Tags: {', '.join(tags[:3])}")
+                            
+                            # Add created/modified date
+                            modified = model.get("lastModified", "")
+                            if modified:
+                                try:
+                                    mod_date = datetime.fromisoformat(modified.replace("Z", "+00:00"))
+                                    days_ago = (datetime.now(mod_date.tzinfo) - mod_date).days
+                                    if days_ago == 0:
+                                        description_parts.append("Updated today")
+                                    elif days_ago == 1:
+                                        description_parts.append("Updated yesterday")
+                                    else:
+                                        description_parts.append(f"Updated {days_ago} days ago")
+                                except:
+                                    pass
+                            
+                            # Add library
+                            if "library_name" in model:
+                                description_parts.append(f"Library: {model['library_name']}")
+                            
+                            description = " | ".join(description_parts)
+                            date_str = modified.split("T")[0] if modified else datetime.now().strftime("%Y-%m-%d")
+                            
+                            # Try to fetch model card for more details
+                            try:
+                                card_url = f"https://huggingface.co/{model_id}/raw/main/README.md"
+                                card_response = requests.get(card_url, timeout=5)
+                                if card_response.status_code == 200:
+                                    card_text = card_response.text
+                                    # Look for model description or performance info
+                                    lines = card_text.split("\n")
+                                    for i, line in enumerate(lines[:20]):
+                                        if "model description" in line.lower() or "overview" in line.lower():
+                                            # Get next non-empty line
+                                            for next_line in lines[i+1:i+5]:
+                                                if next_line.strip() and not next_line.startswith("#"):
+                                                    description = next_line.strip()[:200]
+                                                    break
+                                            break
+                                        elif any(metric in line.lower() for metric in ["accuracy", "f1", "bleu", "rouge", "throughput", "latency", "benchmark"]):
+                                            if description == " | ".join(description_parts):
+                                                description = line.strip()[:200]
+                                            break
+                            except:
+                                pass
+                            
+                            news_item = NewsItem(
+                                title=title,
+                                url=url,
+                                source=source_name,
+                                description=description,
+                                date=date_str,
+                                category="Models & Tools"
+                            )
+                            news_items.append(news_item)
+                            added += 1
+                    except Exception as e:
+                        logging.warning(f"Error processing HF model: {e}")
+                        continue
+                
+                logging.info(f"Fetched {added} models from {source_name}")
+                
+            except Exception as e:
+                logging.error(f"Error fetching {source.get('name', 'HF org')}: {e}")
+                continue
+        
+        return news_items
+    
     def fetch_github_trending(self) -> List[NewsItem]:
         """Fetch trending AI/ML repositories from GitHub."""
         news_items = []
@@ -573,6 +693,7 @@ class AINewsAggregator:
         # Fetch from all sources
         all_news.extend(self.fetch_arxiv_papers())
         all_news.extend(self.fetch_huggingface_updates())
+        all_news.extend(self.fetch_huggingface_org_models())  # New: Fetch from HF org pages
         all_news.extend(self.fetch_github_trending())
         all_news.extend(self.fetch_company_blogs())
         
