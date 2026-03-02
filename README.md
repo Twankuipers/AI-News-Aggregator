@@ -74,6 +74,20 @@ pwsh -ExecutionPolicy Bypass -File setup_scheduler.ps1
 
 The workflow in `.github/workflows/daily-news.yml` runs the agent on a schedule.
 
+### Enable Write Permissions
+
+**IMPORTANT**: You must enable write permissions for GitHub Actions:
+
+1. Go to your repository on GitHub
+2. Click **Settings** → **Actions** → **General**
+3. Scroll to **Workflow permissions**
+4. Select **Read and write permissions**
+5. Click **Save**
+
+Without this, the workflow cannot save `seen_items.json` and will show duplicate articles every run.
+
+### Set GitHub Secrets
+
 Set these GitHub Actions secrets (Slack or Email, or both):
 
 Slack:

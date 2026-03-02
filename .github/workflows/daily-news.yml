@@ -22,6 +22,8 @@ jobs:
       with:
         # Fetch full history to allow committing back changes
         fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+        persist-credentials: true
     
     - name: Set up Python 3.11
       uses: actions/setup-python@v5
@@ -37,6 +39,15 @@ jobs:
     - name: Create necessary directories
       run: |
         mkdir -p data logs output
+    
+    - name: Check existing seen_items.json
+      run: |
+        if [ -f data/seen_items.json ]; then
+          echo "✓ seen_items.json exists from previous run"
+          echo "Number of seen items: $(jq '.seen_ids | length' data/seen_items.json)"
+        else
+          echo "⚠️  No previous seen_items.json found (first run or not committed)"
+        fi
     
     - name: Run AI News Agent
       env:
@@ -64,26 +75,59 @@ jobs:
       run: |
         python ai_news_agent.py
     
+    - name: Verify seen_items.json updated
+      run: |
+        if [ -f data/seen_items.json ]; then
+          echo "✓ seen_items.json created/updated"
+          echo "Total seen items now: $(jq '.seen_ids | length' data/seen_items.json)"
+          git diff data/seen_items.json | head -20
+        else
+          echo "❌ ERROR: seen_items.json not created!"
+          exit 1
+        fi
+    
     - name: Commit and push seen_items.json
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         
-        # Add seen_items.json (critical for deduplication across runs)
-        if [ -f data/seen_items.json ]; then
-          git add data/seen_items.json
-          
-          # Commit if there are changes
-          if ! git diff --cached --quiet; then
-            git commit -m "Auto-update: seen_items.json $(date +'%Y-%m-%d %H:%M')"
-            git pull --rebase origin main || git pull --rebase origin master
-            git push
-            echo "✓ seen_items.json saved successfully"
-          else
-            echo "No changes to seen_items.json"
-          fi
+        # Detect current branch
+        BRANCH=$(git rev-parse --abbrev-ref HEAD)
+        echo "Current branch: $BRANCH"
+        
+        # Check if seen_items.json exists
+        if [ ! -f data/seen_items.json ]; then
+          echo "❌ ERROR: data/seen_items.json not found!"
+          ls -la data/
+          exit 1
+        fi
+        
+        echo "✓ seen_items.json exists"
+        
+        # Add seen_items.json
+        git add data/seen_items.json
+        
+        # Check if there are changes to commit
+        if git diff --cached --quiet; then
+          echo "No changes to commit in seen_items.json"
+          exit 0
+        fi
+        
+        echo "Changes detected, committing..."
+        git commit -m "Auto-update: seen_items.json $(date +'%Y-%m-%d %H:%M')"
+        
+        echo "Pulling latest changes..."
+        git pull --rebase origin "$BRANCH" || {
+          echo "⚠️  Pull failed, attempting to continue with push..."
+        }
+        
+        echo "Pushing changes..."
+        if git push origin "$BRANCH"; then
+          echo "✓ Successfully pushed seen_items.json to $BRANCH"
         else
-          echo "Warning: data/seen_items.json not found"
+          echo "❌ ERROR: Failed to push changes"
+          git status
+          exit 1
         fi
     
     - name: Upload digest artifacts
