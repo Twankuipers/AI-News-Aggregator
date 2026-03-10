@@ -130,28 +130,8 @@
       "category": "Cloud AI",
       "enabled": true,
       "type": "rss"
-    },
-    {
-      "name": "Import AI",
-      "url": "https://importai.substack.com/feed",
-      "category": "Newsletter",
-      "enabled": true,
-      "type": "rss"
-    },
-    {
-      "name": "KDnuggets",
-      "url": "https://www.kdnuggets.com/feed",
-      "category": "Industry News",
-      "enabled": true,
-      "type": "rss"
-    },
-    {
-      "name": "Towards Data Science",
-      "url": "https://towardsdatascience.com/feed",
-      "category": "Research",
-      "enabled": true,
-      "type": "rss"
     }
+    
   ],
   "keywords": [],
   "comment_keywords": "Leave empty to include ALL articles from sources. Add keywords to filter (e.g., 'transformer', 'LLM', 'GPT')",
