@@ -60,7 +60,7 @@
     },
     {
       "name": "OpenAI Blog",
-      "url": "https://openai.com/blog",
+      "url": "https://openai.com/news",
       "category": "Company News",
       "enabled": true
     },
@@ -81,27 +81,6 @@
       "url": "https://blog.google/",
       "category": "Company News",
       "enabled": true
-    },
-    {
-      "name": "VentureBeat AI",
-      "url": "https://venturebeat.com/category/ai/feed/",
-      "category": "Industry News",
-      "enabled": true,
-      "type": "rss"
-    },
-    {
-      "name": "The Verge AI",
-      "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
-      "category": "Industry News",
-      "enabled": true,
-      "type": "rss"
-    },
-    {
-      "name": "TechCrunch AI",
-      "url": "https://techcrunch.com/category/artificial-intelligence/feed/",
-      "category": "Industry News",
-      "enabled": true,
-      "type": "rss"
     },
     {
       "name": "MIT Technology Review",
@@ -131,7 +110,7 @@
       "enabled": true,
       "type": "rss"
     }
-    
+
   ],
   "keywords": [],
   "comment_keywords": "Leave empty to include ALL articles from sources. Add keywords to filter (e.g., 'transformer', 'LLM', 'GPT')",
