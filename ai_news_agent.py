@@ -1243,7 +1243,7 @@ def enrich_with_summaries(news_items: List[NewsItem], config: dict):
         for i, item in enumerate(items_to_summarise)
     )
 
-    prompt = f"""You are an AI news analyst. For each numbered article below, write exactly ONE concise English sentence (max 20 words) summarising what it is about. Return ONLY valid JSON in this exact format:
+    prompt = f"""You are an AI news analyst. For each numbered article below, write exactly ONE concise Dutch sentence (max 20 words) summarising what it is about. Return ONLY valid JSON in this exact format:
 {{"summaries": ["sentence for 1", "sentence for 2", ...]}}
 
 Articles:
@@ -1296,6 +1296,7 @@ def generate_groq_summary(news_items: List[NewsItem], config: dict) -> str:
     prompt = f"""Je bent een AI-nieuwsanalist. Hieronder staan de belangrijkste AI-nieuwskoppen en onderzoeksartikelen van vandaag.
 Schrijf een korte, pakkende samenvatting (max 150 woorden) die de belangrijkste trends, doorbraken en thema's van de dag belicht.
 Wees beknopt, inzichtelijk en schrijf in het Nederlands, als het om modellen gaat vertel dan welke scores ze hebben behaald in benchmarks.
+je mag de editor gebruiken die standaard geleverd is in slack.
 
 Het AI-nieuws van vandaag:
 {news_text}
