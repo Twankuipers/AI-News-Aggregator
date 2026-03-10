@@ -59,6 +59,7 @@ class AINewsAggregator:
         self.config = self._load_config()
         self.seen_items_path = Path("data/seen_items.json")
         self.seen_items = self._load_seen_items()
+        self.run_date = datetime.now()
         self._setup_logging()
     
     def _load_config(self) -> Dict[str, Any]:
@@ -182,7 +183,7 @@ class AINewsAggregator:
         log_dir = Path("logs")
         log_dir.mkdir(exist_ok=True)
         
-        log_file = log_dir / f"agent_{datetime.now().strftime('%Y-%m-%d')}.log"
+        log_file = log_dir / f"agent_{self.run_date.strftime('%Y-%m-%d')}.log"
         
         logging.basicConfig(
             level=logging.INFO,
@@ -254,7 +255,7 @@ class AINewsAggregator:
                         url=paper_url,
                         source=f"ArXiv {cat_name}",
                         description=description,
-                        date=datetime.now().strftime("%Y-%m-%d"),
+                        date=self.run_date.strftime("%Y-%m-%d"),
                         category="Research Papers"
                     )
                     news_items.append(news_item)
@@ -298,7 +299,7 @@ class AINewsAggregator:
                         post_url = href
                     
                     # Try to extract date from article
-                    post_date = datetime.now().strftime("%Y-%m-%d")
+                    post_date = self.run_date.strftime("%Y-%m-%d")
                     days_old = 0
                     
                     date_elem = article.find('time')
@@ -311,17 +312,17 @@ class AINewsAggregator:
                             num = int(relative_match.group(1))
                             unit = relative_match.group(2)
                             days_old = num if unit == 'day' else 0
-                            post_datetime = datetime.now() - timedelta(days=days_old)
+                            post_datetime = self.run_date - timedelta(days=days_old)
                             post_date = post_datetime.strftime("%Y-%m-%d")
                         else:
-                            current_year = datetime.now().year
+                            current_year = self.run_date.year
                             parsed = False
                             # Try formats with year first
                             for fmt in ["%B %d, %Y", "%b %d, %Y", "%Y-%m-%d", "%d/%m/%Y"]:
                                 try:
                                     parsed_date = datetime.strptime(date_str, fmt)
                                     post_date = parsed_date.strftime("%Y-%m-%d")
-                                    days_old = (datetime.now() - parsed_date).days
+                                    days_old = (self.run_date - parsed_date).days
                                     parsed = True
                                     break
                                 except:
@@ -332,11 +333,11 @@ class AINewsAggregator:
                                     try:
                                         date_with_year = f"{date_str} {current_year}"
                                         parsed_date = datetime.strptime(date_with_year, fmt)
-                                        if parsed_date > datetime.now():
+                                        if parsed_date > self.run_date:
                                             date_with_year = f"{date_str} {current_year - 1}"
                                             parsed_date = datetime.strptime(date_with_year, fmt)
                                         post_date = parsed_date.strftime("%Y-%m-%d")
-                                        days_old = (datetime.now() - parsed_date).days
+                                        days_old = (self.run_date - parsed_date).days
                                         parsed = True
                                         break
                                     except:
@@ -450,7 +451,7 @@ class AINewsAggregator:
                                 description_parts.append(f"Library: {model['library_name']}")
                             
                             description = " | ".join(description_parts)
-                            date_str = modified.split("T")[0] if modified else datetime.now().strftime("%Y-%m-%d")
+                            date_str = modified.split("T")[0] if modified else self.run_date.strftime("%Y-%m-%d")
                             
                             # Try to fetch model card for more details
                             try:
@@ -554,7 +555,7 @@ class AINewsAggregator:
                         url=repo_url,
                         source="GitHub Trending",
                         description=description,
-                        date=datetime.now().strftime("%Y-%m-%d"),
+                        date=self.run_date.strftime("%Y-%m-%d"),
                         category="Open Source"
                     )
                     news_items.append(news_item)
@@ -583,7 +584,7 @@ class AINewsAggregator:
             for entry in feed.entries[:5]:
                 try:
                     pub_date = datetime(*entry.published_parsed[:6])
-                    days_old = (datetime.now() - pub_date).days
+                    days_old = (self.run_date - pub_date).days
                     
                     if days_old <= 30:
                         description = entry.get('summary', '')
@@ -623,7 +624,7 @@ class AINewsAggregator:
                     for entry in feed.entries[:5]:
                         try:
                             pub_date = datetime(*entry.published_parsed[:6])
-                            days_old = (datetime.now() - pub_date).days
+                            days_old = (self.run_date - pub_date).days
                             if days_old > 2:
                                 continue
                             description = re.sub('<[^<]+?>', '', entry.get('summary', ''))[:250]
@@ -685,7 +686,65 @@ class AINewsAggregator:
             logging.warning(f"Error fetching Anthropic news: {e}")
         
         return news_items
-    
+
+    def fetch_rss_feeds(self) -> List[NewsItem]:
+        """Fetch news items from configured RSS feed sources."""
+        news_items = []
+        date_range = self.config.get("filters", {}).get("date_range_days", 7)
+        max_per_source = self.config.get("max_items_per_source", 10)
+
+        for source in self.config.get("sources", []):
+            if source.get("type") != "rss" or not source.get("enabled", True):
+                continue
+
+            source_name = source.get("name", source["url"])
+            feed_url = source["url"]
+            category = source.get("category", "News")
+
+            try:
+                logging.info(f"Fetching RSS feed: {source_name}...")
+                feed = feedparser.parse(feed_url)
+                added = 0
+
+                for entry in feed.entries:
+                    if added >= max_per_source:
+                        break
+                    try:
+                        if hasattr(entry, "published_parsed") and entry.published_parsed:
+                            pub_date = datetime(*entry.published_parsed[:6])
+                            days_old = (self.run_date - pub_date).days
+                            if days_old > date_range:
+                                continue
+                            date_str = pub_date.strftime("%Y-%m-%d")
+                        else:
+                            date_str = self.run_date.strftime("%Y-%m-%d")
+
+                        title = entry.get("title", "").strip()
+                        url = entry.get("link", "")
+                        if not title or not url:
+                            continue
+
+                        description = re.sub(r"<[^>]+>", "", entry.get("summary", ""))[:250].strip()
+
+                        news_items.append(NewsItem(
+                            title=title,
+                            url=url,
+                            source=source_name,
+                            description=description,
+                            date=date_str,
+                            category=category,
+                        ))
+                        added += 1
+                    except Exception as e:
+                        logging.warning(f"Error parsing entry from {source_name}: {e}")
+                        continue
+
+                logging.info(f"Fetched {added} items from {source_name}")
+            except Exception as e:
+                logging.error(f"Error fetching RSS feed {source_name}: {e}")
+
+        return news_items
+
     def aggregate_news(self) -> List[NewsItem]:
         """Aggregate news from all sources and deduplicate."""
         all_news = []
@@ -696,6 +755,7 @@ class AINewsAggregator:
         all_news.extend(self.fetch_huggingface_org_models())  # New: Fetch from HF org pages
         all_news.extend(self.fetch_github_trending())
         all_news.extend(self.fetch_company_blogs())
+        all_news.extend(self.fetch_rss_feeds())
         
         # Deduplicate against seen items
         new_news = [item for item in all_news if item.id not in self.seen_items]
@@ -744,7 +804,7 @@ class AINewsAggregator:
     
     def generate_email_html(self, news_items: List[NewsItem], config: dict, summary: str = "") -> str:
         """Generate HTML email content."""
-        date_str = datetime.now().strftime("%B %d, %Y")
+        date_str = self.run_date.strftime("%B %d, %Y")
         
         summary_block = ""
         if summary:
@@ -862,7 +922,7 @@ class AINewsAggregator:
     
     def generate_email_text(self, news_items: List[NewsItem], summary: str = "") -> str:
         """Generate plain text email content."""
-        date_str = datetime.now().strftime("%B %d, %Y")
+        date_str = self.run_date.strftime("%B %d, %Y")
         
         text = f"""
 AI NEWS DIGEST - {date_str}
@@ -904,7 +964,7 @@ To customize your news sources or keywords, edit config.json
         output_dir = Path("output")
         output_dir.mkdir(exist_ok=True)
         
-        today = datetime.now().strftime("%Y-%m-%d")
+        today = self.run_date.strftime("%Y-%m-%d")
         
         # Save HTML version
         html_content = self.generate_email_html(news_items, self.config, summary)
@@ -962,7 +1022,7 @@ To customize your news sources or keywords, edit config.json
             
             # Create message
             msg = MIMEMultipart("alternative")
-            msg["Subject"] = f"🤖 AI News Digest - {datetime.now().strftime('%B %d, %Y')}"
+            msg["Subject"] = f"🤖 AI News Digest - {self.run_date.strftime('%B %d, %Y')}"
             msg["From"] = from_email
             msg["To"] = to_email
             
@@ -1025,7 +1085,7 @@ To customize your news sources or keywords, edit config.json
                     "to": [{"email": to_email}]
                 }],
                 "from": {"email": from_email},
-                "subject": f"🤖 AI News Digest - {datetime.now().strftime('%B %d, %Y')}",
+                "subject": f"🤖 AI News Digest - {self.run_date.strftime('%B %d, %Y')}",
                 "content": [
                     {"type": "text/plain", "value": text_content},
                     {"type": "text/html", "value": html_content}
@@ -1058,7 +1118,7 @@ To customize your news sources or keywords, edit config.json
             data = {
                 "from": from_email,
                 "to": to_email,
-                "subject": f"🤖 AI News Digest - {datetime.now().strftime('%B %d, %Y')}",
+                "subject": f"🤖 AI News Digest - {self.run_date.strftime('%B %d, %Y')}",
                 "text": text_content,
                 "html": html_content
             }
@@ -1085,7 +1145,7 @@ To customize your news sources or keywords, edit config.json
             
             if not news_items:
                 payload = {
-                    "text": f"🤖 *AI News Digest* - {datetime.now().strftime('%B %d, %Y')}\n\nNo new items today.",
+                    "text": f"🤖 *AI News Digest* - {self.run_date.strftime('%B %d, %Y')}\n\nNo new items today.",
                     "mrkdwn": True
                 }
                 response = requests.post(webhook_url, json=payload)
@@ -1102,7 +1162,7 @@ To customize your news sources or keywords, edit config.json
                 sources.setdefault(item.source, []).append(item)
 
             # Build message
-            text = f"🤖 *AI News Digest* - {datetime.now().strftime('%B %d, %Y')}\n\n"
+            text = f"🤖 *AI News Digest* - {self.run_date.strftime('%B %d, %Y')}\n\n"
 
             # Summary + article links at the top
             if summary:
@@ -1112,6 +1172,8 @@ To customize your news sources or keywords, edit config.json
                 text += f"*{source}*\n"
                 for item in items[:3]:  # Show first 3 items per source
                     text += f"• <{item.url}|{item.title}>\n"
+                    if item.description:
+                        text += f"  _{item.description[:120]}_\n"
                 text += "\n"
             
             payload = {
@@ -1144,22 +1206,74 @@ To customize your news sources or keywords, edit config.json
                     self._send_slack_message([])
                 return
             
+            # Enrich articles with per-article summaries
+            enrich_with_summaries(news_items, self.config)
+
             # Generate Groq summary
             summary = generate_groq_summary(news_items, self.config)
 
-            # Save digests
-            html_content, text_content = self.save_digest(news_items, summary)
+            # Generate HTML content for email
+            html_content = self.generate_email_html(news_items, self.config, summary)
 
             # Send notifications
             self.send_notifications(news_items, html_content, summary)
 
             logging.info(f"Successfully processed {len(news_items)} news items")
             print(f"[OK] Digest generated with {len(news_items)} news items")
-            print(f"  Check output/digest_{datetime.now().strftime('%Y-%m-%d')}.html")
 
         except Exception as e:
             logging.error(f"Error during execution: {e}", exc_info=True)
             raise
+
+
+def enrich_with_summaries(news_items: List[NewsItem], config: dict):
+    """Replace each item's description with a one-sentence Groq summary (single batched call)."""
+    groq_config = config.get("groq_config", {})
+    if not groq_config.get("enabled", False):
+        return
+
+    api_key = groq_config.get("api_key") or os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        logging.warning("Groq API key not found, skipping per-article summaries")
+        return
+
+    items_to_summarise = news_items[:40]
+    numbered = "\n".join(
+        f"{i+1}. [{item.source}] {item.title}: {item.description[:120]}"
+        for i, item in enumerate(items_to_summarise)
+    )
+
+    prompt = f"""You are an AI news analyst. For each numbered article below, write exactly ONE concise English sentence (max 20 words) summarising what it is about. Return ONLY valid JSON in this exact format:
+{{"summaries": ["sentence for 1", "sentence for 2", ...]}}
+
+Articles:
+{numbered}"""
+
+    try:
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": groq_config.get("model", "llama-3.1-8b-instant"),
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 1500,
+                "temperature": 0.3,
+                "response_format": {"type": "json_object"}
+            },
+            timeout=45
+        )
+        response.raise_for_status()
+        data = response.json()["choices"][0]["message"]["content"]
+        summaries = json.loads(data).get("summaries", [])
+        for i, item in enumerate(items_to_summarise):
+            if i < len(summaries) and summaries[i]:
+                item.description = summaries[i].strip()
+        logging.info(f"Generated per-article summaries for {len(summaries)} items")
+    except Exception as e:
+        logging.warning(f"Per-article summary enrichment failed: {e}")
 
 
 def generate_groq_summary(news_items: List[NewsItem], config: dict) -> str:
