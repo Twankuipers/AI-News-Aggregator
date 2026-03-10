@@ -104,31 +104,57 @@ jobs:
         
         echo "✓ seen_items.json exists"
         
-        # Add seen_items.json
-        git add data/seen_items.json
-        
-        # Check if there are changes to commit
-        if git diff --cached --quiet; then
-          echo "No changes to commit in seen_items.json"
-          exit 0
-        fi
-        
-        echo "Changes detected, committing..."
-        git commit -m "Auto-update: seen_items.json $(date +'%Y-%m-%d %H:%M')"
-        
-        echo "Pulling latest changes..."
-        git pull --rebase origin "$BRANCH" || {
-          echo "⚠️  Pull failed, attempting to continue with push..."
+        # Merge local + remote seen_ids deterministically, then push with retries.
+        merge_seen_items() {
+          local remote_file
+          remote_file=$(mktemp)
+
+          if git show "origin/$BRANCH:data/seen_items.json" > "$remote_file" 2>/dev/null; then
+            jq -s '{
+              seen_ids: ([.[0].seen_ids // [], .[1].seen_ids // []] | add | unique | sort),
+              last_updated: .[1].last_updated
+            }' "$remote_file" data/seen_items.json > data/seen_items.merged.json
+            mv data/seen_items.merged.json data/seen_items.json
+          fi
+
+          rm -f "$remote_file"
         }
-        
-        echo "Pushing changes..."
-        if git push origin "$BRANCH"; then
-          echo "✓ Successfully pushed seen_items.json to $BRANCH"
-        else
-          echo "❌ ERROR: Failed to push changes"
-          git status
-          exit 1
-        fi
+
+        MAX_RETRIES=3
+        ATTEMPT=1
+
+        while [ "$ATTEMPT" -le "$MAX_RETRIES" ]; do
+          echo "Fetch/merge/push attempt $ATTEMPT/$MAX_RETRIES"
+
+          git fetch origin "$BRANCH"
+          merge_seen_items
+
+          git add data/seen_items.json
+
+          if git diff --cached --quiet; then
+            if [ "$(git rev-list --count "origin/$BRANCH..HEAD")" -eq 0 ]; then
+              echo "No changes to commit in seen_items.json"
+              exit 0
+            fi
+            echo "No new staged changes, but local branch is ahead; trying push again..."
+          else
+            echo "Changes detected, committing..."
+            git commit -m "Auto-update: seen_items.json $(date +'%Y-%m-%d %H:%M')"
+          fi
+
+          echo "Pushing changes..."
+          if git push origin "$BRANCH"; then
+            echo "✓ Successfully pushed seen_items.json to $BRANCH"
+            exit 0
+          fi
+
+          echo "⚠️  Push failed (likely non-fast-forward); retrying..."
+          ATTEMPT=$((ATTEMPT + 1))
+        done
+
+        echo "❌ ERROR: Failed to push changes after $MAX_RETRIES attempts"
+        git status
+        exit 1
     
     - name: Upload digest artifacts
       uses: actions/upload-artifact@v4
